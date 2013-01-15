@@ -67,9 +67,8 @@ def getIntersections(clip, toBeClipped, outputDir):
                             #first project to our new geo
 
                             if 'Polygon' == featureGeom:
-                                newPolygon  = [ ]
-                                newPolygon.append(projectPolygon(Proj(clippedColl.crs), Proj(output.crs),intersectCheck['geometry']['coordinates']))
-                                intersectCheck['geometry']['coordinates'] = newPolygon
+                                newPolygonCoords = projectPolygon(Proj(clippedColl.crs), Proj(output.crs),intersectCheck['geometry']['coordinates'])
+                                intersectCheck['geometry']['coordinates'] = newPolygonCoords
                                 output.write(intersectCheck)
 
                             elif 'MultiPolygon' == featureGeom:
