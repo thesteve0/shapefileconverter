@@ -45,42 +45,42 @@ def getIntersections(clip, toBeClipped, outputDir):
     with collection(clip, "r") as clipColl:
         schema = clipColl.schema.copy()
 
-        with collection(toBeClipped) as clippedColl:
-            print clippedColl.name
-            geomType = clippedColl.schema['geometry']
+        with collection(toBeClipped) as toBeClippedColl:
+            print toBeClippedColl.name
+            geomType = toBeClippedColl.schema['geometry']
             ##create our output shapefile
-            outPath =  outputDir + '/' + clippedColl.name + '_final.shp'
-#            outputFile = collection(outPath, 'w', 'ESRI Shapefile', clippedColl.schema.copy, {'init': 'epsg=4326', 'no_defs': True}  )
+            outPath =  outputDir + '/' + toBeClippedColl.name + '_final.shp'
+#            outputFile = collection(outPath, 'w', 'ESRI Shapefile', toBeClippedColl.schema.copy, {'init': 'epsg=4326', 'no_defs': True}  )
 
-            with collection(outPath, 'w', 'ESRI Shapefile', clippedColl.schema.copy(), {'init': 'epsg:4326'} ) as output:
+            with collection(outPath, 'w', 'ESRI Shapefile', toBeClippedColl.schema.copy(), {'init': 'epsg:4326'} ) as output:
 
                 for clipFeature in clipColl:
 
-                    for intersectCheck in clippedColl:
+                    for toBeClippedFeature in toBeClippedColl:
                         clipShape = shape(clipFeature['geometry'])
-                        intersectShape = shape(intersectCheck['geometry'])
-                        if clipShape.intersects(intersectShape):
-                            featureGeom = intersectCheck['geometry']['type']
+                        toBeClippedShape = shape(toBeClippedFeature['geometry'])
+                        if clipShape.intersects(toBeClippedShape):
+                            featureGeom = toBeClippedFeature['geometry']['type']
                             #winner winner chicken dinner the shapes intersect
                             #first project to our new geo
 
                             if 'Polygon' == featureGeom:
-                                newPolygonCoords = projectPolygon(Proj(clippedColl.crs), Proj(output.crs),intersectCheck['geometry']['coordinates'])
+                                newPolygonCoords = projectPolygon(Proj(toBeClippedColl.crs), Proj(output.crs),toBeClippedFeature['geometry']['coordinates'])
                                # print str(type(newPolygonCoords)) + " :: " +str(newPolygonCoords)
-                                intersectCheck['geometry']['coordinates'] = newPolygonCoords
-                                output.write(intersectCheck)
+                                toBeClippedFeature['geometry']['coordinates'] = newPolygonCoords
+                                output.write(toBeClippedFeature)
 
                             elif 'MultiPolygon' == featureGeom:
                                 ##need to split the geometry and put it back together before saving
                                 newPolygons = []
-                                intersectCheckBefore = intersectCheck.copy()
-                                for geom in intersectCheck['geometry']['coordinates']:
+                                intersectCheckBefore = toBeClippedFeature.copy()
+                                for geom in toBeClippedFeature['geometry']['coordinates']:
                                     #print str(type(geom)) + " :: " +str(geom)
-                                    newSinglePolyCoords = projectPolygon(Proj(clippedColl.crs), Proj(output.crs),geom)
+                                    newSinglePolyCoords = projectPolygon(Proj(toBeClippedColl.crs), Proj(output.crs),geom)
                                     newPolygons.append(newSinglePolyCoords)
-                                intersectCheck['geometry']['coordinates'] = newPolygons
+                                toBeClippedFeature['geometry']['coordinates'] = newPolygons
                                 try:
-                                    output.write(intersectCheck)
+                                    output.write(toBeClippedFeature)
                                 except:
                                     pdb.set_trace()
                                     raise
