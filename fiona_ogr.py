@@ -7,19 +7,17 @@ from fiona import collection
 from pyproj import transform, Proj
 
 import logging
+import pdb
 
 def projectPolygon(fromProj, toProj, inputGeom):
     try:
         new_coords = []
         for ring in inputGeom:
-            print "before try"
             try:
                 x2, y2 = transform(fromProj, toProj, *zip(*ring))
                 new_coords.append(zip(x2, y2))
             except TypeError as te:
                 print te.message
-
-        print len(new_coords)
         return new_coords
     except Exception, e:
         logging.exception("Error transforming feature %s:", new_coords)
@@ -68,17 +66,24 @@ def getIntersections(clip, toBeClipped, outputDir):
 
                             if 'Polygon' == featureGeom:
                                 newPolygonCoords = projectPolygon(Proj(clippedColl.crs), Proj(output.crs),intersectCheck['geometry']['coordinates'])
+                               # print str(type(newPolygonCoords)) + " :: " +str(newPolygonCoords)
                                 intersectCheck['geometry']['coordinates'] = newPolygonCoords
                                 output.write(intersectCheck)
 
                             elif 'MultiPolygon' == featureGeom:
                                 ##need to split the geometry and put it back together before saving
                                 newPolygons = []
+                                intersectCheckBefore = intersectCheck.copy()
                                 for geom in intersectCheck['geometry']['coordinates']:
-                                    print str(type(geom)) + " :: " +str(geom)
-                                    newPolygons.append(projectPolygon(Proj(clippedColl.crs), Proj(output.crs),geom))
+                                    #print str(type(geom)) + " :: " +str(geom)
+                                    newSinglePolyCoords = projectPolygon(Proj(clippedColl.crs), Proj(output.crs),geom)
+                                    newPolygons.append(newSinglePolyCoords)
                                 intersectCheck['geometry']['coordinates'] = newPolygons
-                                ##########output.write(intersectCheck)
+                                try:
+                                    output.write(intersectCheck)
+                                except:
+                                    pdb.set_trace()
+                                    raise
 
                             elif 'LineString' == featureGeom:
                                 True
@@ -87,6 +92,10 @@ def getIntersections(clip, toBeClipped, outputDir):
                             elif 'Point' == featureGeom:
                                 True
                             else:
-                                print '!!!!!!!!!!!!!!' + featureGeom
+                                try:
+                                    print '!!!!!!!!!!!!!!' + featureGeom
+                                except:
+                                    pdb.set_trace()
+                                raise
 
 
