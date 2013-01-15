@@ -1,37 +1,37 @@
 from shapely.geometry import shape
 
+
 __author__ = 'spousty'
 
 from fiona import collection
-from pyproj import transform
+from pyproj import transform, Proj
 
-import pprint
 import logging
 
-def projectPolygon(fromProj, toProj, inputFeature, outFile):
-
-    #TODO Rewrite to handle a single feature
+def projectPolygon(fromProj, toProj, inputGeom):
     try:
         new_coords = []
-        for ring in inputFeature['geometry']['coordinates']:
-            x2, y2 = transform(fromProj, toProj, *zip(*ring))
-            new_coords.append(zip(x2, y2))
-        inputFeature['geometry']['coordinates'] = new_coords
-        outFile.write(f)
+        for ring in inputGeom:
+            print "before try"
+            try:
+                x2, y2 = transform(fromProj, toProj, *zip(*ring))
+                new_coords.append(zip(x2, y2))
+            except TypeError as te:
+                print te.message
 
+        print len(new_coords)
+        return new_coords
     except Exception, e:
-        # Writing uncleanable features to a different shapefile
-        # is another option.
-        logging.exception("Error transforming feature %s:", inputFeature['id'])
+        logging.exception("Error transforming feature %s:", new_coords)
 
 
 
 
-#def projectLine(fromProj, toProj, inputFeature):
+#def projectLine(fromProj, toProj, inputGeom):
 
 
 
-#def projectPoint(fromProj, toProj, inputFeature):
+#def projectPoint(fromProj, toProj, inputGeom):
 
 
 def getIntersections(clip, toBeClipped, outputDir):
@@ -45,20 +45,16 @@ def getIntersections(clip, toBeClipped, outputDir):
 
     #read the both files in using fiona
     with collection(clip, "r") as clipColl:
-#        pprint.pprint(clipColl.crs, indent=4)
         schema = clipColl.schema.copy()
-#            print clipColl.crs
-#            print len(clipColl)
 
         with collection(toBeClipped) as clippedColl:
-
-            pprint.pprint(clippedColl.schema['geometry'], indent=4)
+            print clippedColl.name
             geomType = clippedColl.schema['geometry']
-
             ##create our output shapefile
             outPath =  outputDir + '/' + clippedColl.name + '_final.shp'
 #            outputFile = collection(outPath, 'w', 'ESRI Shapefile', clippedColl.schema.copy, {'init': 'epsg=4326', 'no_defs': True}  )
-            with collection(outPath, 'w', 'ESRI Shapefile', clippedColl.schema.copy, {'init': 'epsg:4326'} ) as output:
+
+            with collection(outPath, 'w', 'ESRI Shapefile', clippedColl.schema.copy(), {'init': 'epsg:4326'} ) as output:
 
                 for clipFeature in clipColl:
 
@@ -66,19 +62,32 @@ def getIntersections(clip, toBeClipped, outputDir):
                         clipShape = shape(clipFeature['geometry'])
                         intersectShape = shape(intersectCheck['geometry'])
                         if clipShape.intersects(intersectShape):
+                            featureGeom = intersectCheck['geometry']['type']
                             #winner winner chicken dinner the shapes intersect
                             #first project to our new geo
-                            if geomType == 'Polygon':
-                                projectPolygon(Proj(clippedColl.crs), Proj(output.crs), intersectCheck, output)
-                            elif geomType == 'LineString':
+
+                            if 'Polygon' == featureGeom:
+                                newPolygon  = [ ]
+                                newPolygon.append(projectPolygon(Proj(clippedColl.crs), Proj(output.crs),intersectCheck['geometry']['coordinates']))
+                                intersectCheck['geometry']['coordinates'] = newPolygon
+                                output.write(intersectCheck)
+
+                            elif 'MultiPolygon' == featureGeom:
+                                ##need to split the geometry and put it back together before saving
+                                newPolygons = []
+                                for geom in intersectCheck['geometry']['coordinates']:
+                                    print str(type(geom)) + " :: " +str(geom)
+                                    newPolygons.append(projectPolygon(Proj(clippedColl.crs), Proj(output.crs),geom))
+                                intersectCheck['geometry']['coordinates'] = newPolygons
+                                ##########output.write(intersectCheck)
+
+                            elif 'LineString' == featureGeom:
                                 True
-                            elif geomType == 'Point':
+                            elif 'MultiLineString' == featureGeom:
+                                True
+                            elif 'Point' == featureGeom:
                                 True
                             else:
-                                print " ***** Found a geom type we weren't expecting: " + geomType
+                                print '!!!!!!!!!!!!!!' + featureGeom
 
-
-
-                            #then add to the array to write
-                           # featuresToWrite.append(intersectShape)
 
