@@ -62,34 +62,34 @@ def getIntersections(clip, toBeClipped, outputDir):
                         if clipShape.intersects(toBeClippedShape):
                             featureGeom = toBeClippedFeature['geometry']['type']
                             #winner winner chicken dinner the shapes intersect
-                            #first project to our new geo
 
-                            if 'Polygon' == featureGeom:
+                            if featureGeom =='Polygon':
                                 newPolygonCoords = projectPolygon(Proj(toBeClippedColl.crs), Proj(output.crs),toBeClippedFeature['geometry']['coordinates'])
                                # print str(type(newPolygonCoords)) + " :: " +str(newPolygonCoords)
                                 toBeClippedFeature['geometry']['coordinates'] = newPolygonCoords
                                 output.write(toBeClippedFeature)
 
-                            elif 'MultiPolygon' == featureGeom:
+                            elif featureGeom == 'MultiPolygon':
                                 ##need to split the geometry and put it back together before saving
                                 newPolygons = []
-                                intersectCheckBefore = toBeClippedFeature.copy()
                                 for geom in toBeClippedFeature['geometry']['coordinates']:
                                     #print str(type(geom)) + " :: " +str(geom)
                                     newSinglePolyCoords = projectPolygon(Proj(toBeClippedColl.crs), Proj(output.crs),geom)
                                     newPolygons.append(newSinglePolyCoords)
                                 toBeClippedFeature['geometry']['coordinates'] = newPolygons
+                                print toBeClippedFeature['id']
                                 try:
                                     output.write(toBeClippedFeature)
-                                except:
-                                    pdb.set_trace()
-                                    raise
+                                    output.flush()
+                                except Exception, e:
+                                    print e.message
 
-                            elif 'LineString' == featureGeom:
+
+                            elif featureGeom =='LineString':
                                 True
-                            elif 'MultiLineString' == featureGeom:
+                            elif featureGeom == 'MultiLineString' :
                                 True
-                            elif 'Point' == featureGeom:
+                            elif featureGeom == 'Point':
                                 True
                             else:
                                 try:
