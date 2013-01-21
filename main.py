@@ -22,12 +22,12 @@ logger.setLevel(logging.DEBUG)
 #logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 
 def main():
-    #clipDir = '/home/spousty/Dropbox/Redhat_OS/Work/SCCGeo/_clip'
-    clipDir = '/Users/spousty/Dropbox/Redhat_OS/Work/SCCGeo/_clip'
-    #toBeClippedDir = '/home/spousty/Dropbox/Redhat_OS/Work/SCCGeo/ToBeClipped'
-    toBeClippedDir = '/Users/spousty/Dropbox/Redhat_OS/Work/SCCGeo/ToBeClipped'
-    #outputDir =  '/home/spousty/Dropbox/Redhat_OS/Work/SCCGeo/clipped'
-    outputDir =  '/Users/spousty/Dropbox/Redhat_OS/Work/SCCGeo/clipped'
+    clipDir = '/home/spousty/Dropbox/Redhat_OS/Work/SCCGeo/_clip'
+    #clipDir = '/Users/spousty/Dropbox/Redhat_OS/Work/SCCGeo/_clip'
+    toBeClippedDir = '/home/spousty/Dropbox/Redhat_OS/Work/SCCGeo/ToBeClipped'
+    #toBeClippedDir = '/Users/spousty/Dropbox/Redhat_OS/Work/SCCGeo/ToBeClipped'
+    outputDir =  '/home/spousty/Dropbox/Redhat_OS/Work/SCCGeo/clipped'
+    #outputDir =  '/Users/spousty/Dropbox/Redhat_OS/Work/SCCGeo/clipped'
 
     clipFile = ""
     filesToBeClipped = []

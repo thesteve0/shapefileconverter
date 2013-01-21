@@ -8,37 +8,6 @@ from pyproj import transform, Proj
 
 import logging
 
-def projectPolygon(fromProj, toProj, inputGeom):
-    try:
-        new_coords = []
-        for ring in inputGeom:
-            try:
-                x2, y2 = transform(fromProj, toProj, *zip(*ring))
-                new_coords.append(zip(x2, y2))
-            except TypeError as te:
-                print te.message
-        return new_coords
-    except Exception, e:
-        logging.exception("Error transforming feature %s:", new_coords)
-
-
-def projectLine(fromProj, toProj, inputGeom):
-    print 'in projectLine'
-    try:
-        new_coords = []
-        try:
-            x2, y2 = transform(fromProj, toProj, *zip(*inputGeom))
-            new_coords.append(zip(x2, y2))
-        except TypeError as te:
-            print te.message
-        return new_coords
-    except Exception, e:
-        logging.exception("Error transforming feature %s:", new_coords)
-
-
-
-#def projectPoint(fromProj, toProj, inputGeom):
-
 
 def getIntersections(clip, toBeClipped, outputDir):
     '''
@@ -105,18 +74,53 @@ def getIntersections(clip, toBeClipped, outputDir):
 
 
                             elif featureGeom =='LineString':
+
+                                #single Array
+                                newMultiLineCoords  = [ ]
                                 ## Need to make these into MultiLineStrings
                                 toBeClippedFeature['geometry']['type'] = 'MultiLineString'
                                 newLineCoords = projectLine(Proj(toBeClippedColl.crs), Proj(output.crs),toBeClippedFeature['geometry']['coordinates'])
-
-                                toBeClippedFeature['geometry']['coordinates'] = newLineCoords
+                                newMultiLineCoords.append(newLineCoords)
+                                toBeClippedFeature['geometry']['coordinates'] = newMultiLineCoords
                                 #output.write(toBeClippedFeature)
-                                True
+
                             elif featureGeom == 'MultiLineString' :
+                                newMultiLineCoords  = [ ]
                                 True
                             elif featureGeom == 'Point':
                                 True
                             else:
                                 print '!!!!!!!!!!!!!!' + featureGeom
 
+
+def projectPolygon(fromProj, toProj, inputGeom):
+    try:
+        new_coords = []
+        for ring in inputGeom:
+            try:
+                x2, y2 = transform(fromProj, toProj, *zip(*ring))
+                new_coords.append(zip(x2, y2))
+            except TypeError as te:
+                print te.message
+        return new_coords
+    except Exception, e:
+        logging.exception("Error transforming feature %s:", new_coords)
+
+
+def projectLine(fromProj, toProj, inputGeom):
+    print 'in projectLine'
+    try:
+        new_coords = []
+        try:
+            x2, y2 = transform(fromProj, toProj, *zip(*inputGeom))
+            new_coords.append(zip(x2, y2))
+        except TypeError as te:
+            print te.message
+        return new_coords
+    except Exception, e:
+        logging.exception("Error transforming feature %s:", new_coords)
+
+
+
+#def projectPoint(fromProj, toProj, inputGeom):
 
