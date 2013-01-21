@@ -46,8 +46,9 @@ def getIntersections(clip, toBeClipped, outputDir):
                         clipShape = shape(clipFeature['geometry'])
                         toBeClippedShape = shape(toBeClippedFeature['geometry'])
                         if clipShape.intersects(toBeClippedShape):
-                            featureGeom = toBeClippedFeature['geometry']['type']
+
                             #winner winner chicken dinner the shapes intersect
+                            featureGeom = toBeClippedFeature['geometry']['type']
 
                             if featureGeom =='Polygon':
                                 #Need to make these into Multipolygons
@@ -65,7 +66,6 @@ def getIntersections(clip, toBeClipped, outputDir):
                                 ##need to split the geometry and put it back together before saving
                                 newPolygons = []
                                 for geom in toBeClippedFeature['geometry']['coordinates']:
-                                    #print str(type(geom)) + " :: " +str(geom)
                                     newSinglePolyCoords = projectPolygon(Proj(toBeClippedColl.crs), Proj(output.crs),geom)
                                     newPolygons.append(newSinglePolyCoords)
                                 toBeClippedFeature['geometry']['coordinates'] = newPolygons
@@ -75,18 +75,27 @@ def getIntersections(clip, toBeClipped, outputDir):
 
                             elif featureGeom =='LineString':
 
-                                #single Array
                                 newMultiLineCoords  = [ ]
                                 ## Need to make these into MultiLineStrings
                                 toBeClippedFeature['geometry']['type'] = 'MultiLineString'
                                 newLineCoords = projectLine(Proj(toBeClippedColl.crs), Proj(output.crs),toBeClippedFeature['geometry']['coordinates'])
                                 newMultiLineCoords.append(newLineCoords)
                                 toBeClippedFeature['geometry']['coordinates'] = newMultiLineCoords
-                                #output.write(toBeClippedFeature)
 
-                            elif featureGeom == 'MultiLineString' :
+                                try:
+                                        output.write(toBeClippedFeature)
+                                except:
+                                        print "in the exception"
+
+                            elif featureGeom == 'MultiLineString':
+                                print "in multilinestring"
                                 newMultiLineCoords  = [ ]
-                                True
+                                for lineString in toBeClippedFeature['geometry']['coordinates']:
+                                    newLineCoords = projectLine(Proj(toBeClippedColl.crs), Proj(output.crs), lineString)
+                                    newMultiLineCoords.append(newLineCoords)
+                                toBeClippedFeature['geometry']['coordinates'] = newMultiLineCoords
+                                output.write(toBeClippedFeature)
+
                             elif featureGeom == 'Point':
                                 True
                             else:
@@ -108,15 +117,14 @@ def projectPolygon(fromProj, toProj, inputGeom):
 
 
 def projectLine(fromProj, toProj, inputGeom):
-    print 'in projectLine'
     try:
-        new_coords = []
+        #new_coords = []
         try:
             x2, y2 = transform(fromProj, toProj, *zip(*inputGeom))
-            new_coords.append(zip(x2, y2))
+
         except TypeError as te:
             print te.message
-        return new_coords
+        return zip(x2, y2)
     except Exception, e:
         logging.exception("Error transforming feature %s:", new_coords)
 
