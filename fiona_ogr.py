@@ -1,3 +1,5 @@
+from glob import glob
+import os
 from shapely.geometry import shape
 
 
@@ -16,20 +18,24 @@ def getIntersections(clip, toBeClipped, outputDir):
     "Returns True if the boundary and interior of the object intersect in any way with those of the other."
     '''
 
-    featuresToWrite = []
+    filesToDelete = [ ]
 
     #read the both files in using fiona
+    #This collection is the feature(s) that will be used to select the other features
     with collection(clip, "r") as clipColl:
         schema = clipColl.schema.copy()
 
+        #This collection are the features that will be selected
         with collection(toBeClipped) as toBeClippedColl:
             print toBeClippedColl.name
             geomType = toBeClippedColl.schema['geometry']
+
+
             ##create our output shapefile
             outPath =  outputDir + '/' + toBeClippedColl.name + '_final.shp'
 
             #because OGR only allows one geom type to be written to a file, we are going to coerce everything to
-            #Multi (ie Polygon -> Multipolygon
+            #Multi (ie Polygon -> Multipolygon)
             newSchema = toBeClippedColl.schema.copy()
             if 'Polygon' == newSchema['geometry']:
                 newSchema['geometry'] = 'MultiPolygon'
@@ -54,13 +60,10 @@ def getIntersections(clip, toBeClipped, outputDir):
                                 #Need to make these into Multipolygons
                                 newPolygons = []
                                 newPolygonCoords = projectPolygon(Proj(toBeClippedColl.crs), Proj(output.crs),toBeClippedFeature['geometry']['coordinates'])
-
-                                #TODO how do I stop the writing of the file if there are no features in it
-
                                 newPolygons.append(newPolygonCoords)
                                 toBeClippedFeature['geometry']['coordinates'] = newPolygons
                                 toBeClippedFeature['geometry']['type'] = 'MultiPolygon'
-                                #output.write(toBeClippedFeature)
+                                output.write(toBeClippedFeature)
 
                             elif featureGeom == 'MultiPolygon':
                                 ##need to split the geometry and put it back together before saving
@@ -69,8 +72,7 @@ def getIntersections(clip, toBeClipped, outputDir):
                                     newSinglePolyCoords = projectPolygon(Proj(toBeClippedColl.crs), Proj(output.crs),geom)
                                     newPolygons.append(newSinglePolyCoords)
                                 toBeClippedFeature['geometry']['coordinates'] = newPolygons
-
-                                #output.write(toBeClippedFeature)
+                                output.write(toBeClippedFeature)
 
 
                             elif featureGeom =='LineString':
@@ -97,20 +99,41 @@ def getIntersections(clip, toBeClipped, outputDir):
                                 output.write(toBeClippedFeature)
 
                             elif featureGeom == 'Point':
-                                True
+                                newPointCoords = projectPoint(Proj(toBeClippedColl.crs), Proj(output.crs),toBeClippedFeature['geometry']['coordinates'])
+                                toBeClippedFeature['geometry']['coordinates'] = newPointCoords
+                                output.write(toBeClippedFeature)
                             else:
-                                print '!!!!!!!!!!!!!!' + featureGeom
+                                print '!!!!!! ERROR - unexpected Geometry type !!!!!!!!' + featureGeom
+            #if there are 0 features in the output then there are no intersecting features and we should delete the output file
+            if len(output) < 1:
+                print "should remove " + output.name
+                filesToDelete.append(output.name)
+
+    #all done time to delete our emptyfiles - remember a shapefile actually contains many files
+    for shapeFile in filesToDelete:
+        for fileName in glob(outputDir + "/" + shapeFile + "*"):
+            os.remove(fileName)
+
+
+def projectPoint(fromProj, toProj, inputGeom):
+    ''' in each of these function we need to "unpack" the geometries to a lesser or greater degree. Points
+     need the least amount of unpacking to work in the transform function (which does the actual projecting). Then
+     We just return the geometry
+    '''
+    try:
+        x2, y2 = transform(fromProj, toProj, inputGeom[0], inputGeom[1])
+        pointTuple = (x2, y2)
+        return pointTuple
+    except Exception, e:
+        logging.exception("Error transforming feature %s:", str(e))
 
 
 def projectPolygon(fromProj, toProj, inputGeom):
     try:
         new_coords = []
         for ring in inputGeom:
-            try:
-                x2, y2 = transform(fromProj, toProj, *zip(*ring))
-                new_coords.append(zip(x2, y2))
-            except TypeError as te:
-                print te.message
+            x2, y2 = transform(fromProj, toProj, *zip(*ring))
+            new_coords.append(zip(x2, y2))
         return new_coords
     except Exception, e:
         logging.exception("Error transforming feature %s:", new_coords)
@@ -118,17 +141,11 @@ def projectPolygon(fromProj, toProj, inputGeom):
 
 def projectLine(fromProj, toProj, inputGeom):
     try:
-        #new_coords = []
-        try:
-            x2, y2 = transform(fromProj, toProj, *zip(*inputGeom))
-
-        except TypeError as te:
-            print te.message
+        x2, y2 = transform(fromProj, toProj, *zip(*inputGeom))
         return zip(x2, y2)
     except Exception, e:
         logging.exception("Error transforming feature %s:", new_coords)
 
 
 
-#def projectPoint(fromProj, toProj, inputGeom):
 
