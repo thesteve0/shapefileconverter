@@ -49,8 +49,12 @@ def getIntersections(clip, toBeClipped, outputDir):
                 for clipFeature in clipColl:
 
                     for toBeClippedFeature in toBeClippedColl:
+                        #Here we pull out the geometries to be compared and make them into Shapely shapes
                         clipShape = shape(clipFeature['geometry'])
                         toBeClippedShape = shape(toBeClippedFeature['geometry'])
+
+                        #now this is where we test to see if any part of the two shapes intersects (which also includes containment)
+                        #if they do then we keep them and go onward
                         if clipShape.intersects(toBeClippedShape):
 
                             #winner winner chicken dinner the shapes intersect
@@ -59,15 +63,25 @@ def getIntersections(clip, toBeClipped, outputDir):
                             if featureGeom =='Polygon':
                                 #Need to make these into Multipolygons
                                 newPolygons = []
+
+                                ###Project the coordinates of the polygon geometry
                                 newPolygonCoords = projectPolygon(Proj(toBeClippedColl.crs), Proj(output.crs),toBeClippedFeature['geometry']['coordinates'])
                                 newPolygons.append(newPolygonCoords)
+
+                                #replace the old coordinates with the new coordinates
                                 toBeClippedFeature['geometry']['coordinates'] = newPolygons
+
+                                #Set the type to be a multipolygon
                                 toBeClippedFeature['geometry']['type'] = 'MultiPolygon'
+
+                                #Now weite the feature to the output file
                                 output.write(toBeClippedFeature)
 
                             elif featureGeom == 'MultiPolygon':
                                 ##need to split the geometry and put it back together before saving
                                 newPolygons = []
+
+                                #Since a multi-polygon can contain multiple polygons we loop through all the polygons in this feature
                                 for geom in toBeClippedFeature['geometry']['coordinates']:
                                     newSinglePolyCoords = projectPolygon(Proj(toBeClippedColl.crs), Proj(output.crs),geom)
                                     newPolygons.append(newSinglePolyCoords)
@@ -90,7 +104,7 @@ def getIntersections(clip, toBeClipped, outputDir):
                                         print "in the exception"
 
                             elif featureGeom == 'MultiLineString':
-                                print "in multilinestring"
+
                                 newMultiLineCoords  = [ ]
                                 for lineString in toBeClippedFeature['geometry']['coordinates']:
                                     newLineCoords = projectLine(Proj(toBeClippedColl.crs), Proj(output.crs), lineString)
@@ -106,7 +120,6 @@ def getIntersections(clip, toBeClipped, outputDir):
                                 print '!!!!!! ERROR - unexpected Geometry type !!!!!!!!' + featureGeom
             #if there are 0 features in the output then there are no intersecting features and we should delete the output file
             if len(output) < 1:
-                print "should remove " + output.name
                 filesToDelete.append(output.name)
 
     #all done time to delete our emptyfiles - remember a shapefile actually contains many files
@@ -136,7 +149,7 @@ def projectPolygon(fromProj, toProj, inputGeom):
             new_coords.append(zip(x2, y2))
         return new_coords
     except Exception, e:
-        logging.exception("Error transforming feature %s:", new_coords)
+        logging.exception("Error transforming feature %s:", str(e))
 
 
 def projectLine(fromProj, toProj, inputGeom):
@@ -144,7 +157,7 @@ def projectLine(fromProj, toProj, inputGeom):
         x2, y2 = transform(fromProj, toProj, *zip(*inputGeom))
         return zip(x2, y2)
     except Exception, e:
-        logging.exception("Error transforming feature %s:", new_coords)
+        logging.exception("Error transforming feature %s:", str(e))
 
 
 

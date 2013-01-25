@@ -12,8 +12,6 @@ Steps
 3) Select or clip each one
 4) Then Project it
 5) Save it to disk
-6) if it is a point file save it to JSON to import into MongoDB (this will also be a nice shape -> mongo script)
-6) Write a SQL file (using OGR/Fiona)
 
 '''
 
