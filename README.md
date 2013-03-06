@@ -8,4 +8,4 @@ You can find the blog post here:  [https://openshift.redhat.com/community/blogs/
 I have included a couple sample datasets in the repo so you can give it a try. 
 Please also check out the first blog post in the series that explains where the data comes from, what is a shapefile, and what are projections.
 
-[http://]()
+[https://openshift.redhat.com/community/blogs/finding-and-making-sense-of-geospatial-data-on-the-internet](https://openshift.redhat.com/community/blogs/finding-and-making-sense-of-geospatial-data-on-the-internet)
